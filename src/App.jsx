@@ -8,6 +8,7 @@ function App() {
   const [certificateImage, setCertificateImage] = useState(null);
   const [error, setError] = useState(null);
   const [partialEmail, setPartialEmail] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleEmailField = (e) => {
     setEmail(e.target.value);
@@ -20,23 +21,37 @@ function App() {
   const fetchCertificateImage = async () => {
     try {
       // Make an AJAX request to the backend endpoint
-      setPartialEmail(null)
-      setError(null)
-      const url = `http://localhost:3000/getCertificateImage?email=${email}&sbu_code=${sbuCode}`;
+      setLoading(true);
+      setPartialEmail(null);
+      setError(null);
+      if (!email || !sbuCode) {
+        throw new Error("Both Email and SBU Registration Number are required.");
+      }
+      if (!import.meta.env.VITE_API_BASE_URL) {
+        throw new Error("Environment Variable");
+      }
+      const url = `${
+        import.meta.env.VITE_API_BASE_URL
+      }/getCertificateImage?email=${email}&sbu_code=${sbuCode}`;
       const response = await fetch(url);
+      console.log(import.meta.env.VITE_API_BASE_URL);
 
       if (response.status === 404) {
         const data = await response.json();
         if (data.partialEmail) {
           setPartialEmail(data.partialEmail);
         }
-        throw new Error(response.status+' : '+response.statusText);
+        throw new Error(response.status + " : " + response.statusText);
       }
 
       const blob = await response.blob();
-      setCertificateImage(URL.createObjectURL(blob));
-      setFound(true);
+      if (blob) {
+        setCertificateImage(URL.createObjectURL(blob));
+        setFound(true);
+        setLoading(false)
+      }
     } catch (error) {
+      setLoading(false)
       console.error("Error fetching data:", error);
       setError(error);
     }
@@ -113,6 +128,9 @@ function App() {
               />
             </div>
           </div>
+          <div className="h-5 flex items-center justify-center mt-3">
+          {loading && <div className="text-center">Fetching Data...</div>}
+          </div>
           <div className="text-center">
             <button
               className="dark:bg-purple-800 dark:text-white text-black bg-white p-2 rounded-lg my-5 mx-auto"
@@ -121,10 +139,13 @@ function App() {
               Fetch Certificate
             </button>
           </div>
-          {partialEmail && <div className="text-center text-white bg-red-600 w-fit m-auto px-4 py-1 rounded-lg text-lg">Please enter your email: {partialEmail}</div>}
+          {partialEmail && (
+            <div className="text-center text-white bg-red-600 w-fit m-auto px-4 py-1 rounded-lg text-lg">
+              Please enter your email: {partialEmail}
+            </div>
+          )}
         </div>
       )}
-
       {found && (
         <div
           id="result"
@@ -178,8 +199,10 @@ function App() {
       )}
 
       {error && (
-        <div className="pt-20 text-center">
-          <div>{error.message}</div>
+        <div className="pt-10 text-center">
+          <div className="mb-3 text-red-600 font-bold text-lg">
+            {partialEmail ? "" : error.message}
+          </div>
           <p className="pb-5">
             In case of any mistake or support please contact us on WhatsApp
           </p>
