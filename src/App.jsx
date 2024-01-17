@@ -201,7 +201,7 @@ function App() {
       {error && (
         <div className="pt-10 text-center">
           <div className="mb-3 text-red-600 font-bold text-lg">
-            {partialEmail ? "" : error.message}
+            {partialEmail ? "" : error.error}
           </div>
           <p className="pb-5">
             In case of any mistake or support please contact us on WhatsApp
